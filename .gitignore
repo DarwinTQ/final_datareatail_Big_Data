@@ -1,0 +1,12 @@
+# Datasets
+data/raw/*.csv
+data/processed/*.csv
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# PyCharm
+.idea/

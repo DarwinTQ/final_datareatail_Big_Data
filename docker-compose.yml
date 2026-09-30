@@ -1,0 +1,64 @@
+# Mini clúster Big Data para DataRetail: HDFS (Hadoop 3.2.1) + Spark con Jupyter + MongoDB
+# Uso:  docker compose up -d
+#   HDFS web:    http://localhost:9870
+#   Jupyter:     http://localhost:8888   (token: dataretail)
+#   Spark UI:    http://localhost:4040   (aparece cuando corre un job)
+#   MongoDB:     mongodb://localhost:27017  (conectar con Compass)
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      - CLUSTER_NAME=dataretail
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_permissions_enabled=false
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+    volumes:
+      - namenode:/hadoop/dfs/name
+      - ./data:/data              # tu carpeta data/ se ve dentro del contenedor
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_permissions_enabled=false
+    volumes:
+      - datanode:/hadoop/dfs/data
+    depends_on:
+      - namenode
+
+  spark:
+    image: quay.io/jupyter/pyspark-notebook:latest
+    container_name: spark-jupyter
+    ports:
+      - "8888:8888"
+      - "4040:4040"
+    environment:
+      - JUPYTER_TOKEN=dataretail
+    volumes:
+      - ./:/home/jovyan/work      # todo tu proyecto aparece en la carpeta "work"
+    depends_on:
+      - namenode
+      - datanode
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo:/data/db
+      - ./:/work                  # para ejecutar scripts e importar desde el proyecto
+
+volumes:
+  namenode:
+  datanode:
+  mongo:
